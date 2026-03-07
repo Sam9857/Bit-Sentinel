@@ -1,0 +1,488 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>BitSentinel // AI Threat Detection</title>
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}" />
+</head>
+<body>
+
+<!-- ═══════════ BOOT TERMINAL ═══════════ -->
+<div id="boot-terminal"></div>
+
+<!-- Custom cursor -->
+<div id="cursor-dot"></div>
+<div id="cursor-ring"></div>
+
+<!-- Backgrounds: Matrix + Particles -->
+<canvas id="matrix-canvas"></canvas>
+<canvas id="particle-canvas"></canvas>
+
+<!-- Toast container -->
+<div id="toast-container"></div>
+
+<!-- ═══════════ DANGER ALERT OVERLAY ═══════════ -->
+<div id="danger-alert-overlay">
+  <div id="danger-alert-box">
+    <div class="da-header">
+      <span class="da-pulse"></span>
+      ⚠ CRITICAL THREAT DETECTED
+    </div>
+    <div class="da-ip" id="da-ip">0.0.0.0</div>
+    <div class="da-row">Risk Score: <strong id="da-score" style="color:var(--red)">—</strong></div>
+    <div class="da-row">Type: <strong id="da-types" style="color:var(--yellow)">—</strong></div>
+    <div style="display:flex;gap:10px;margin-top:16px">
+      <button class="btn btn-danger btn-sm"
+        onclick="blockIP_modal(document.getElementById('da-ip').textContent);
+                 document.getElementById('danger-alert-overlay').classList.remove('show')">
+        ⛔ Block Now
+      </button>
+      <button class="btn btn-ghost btn-sm" id="da-dismiss">Dismiss</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════ IP DETAIL MODAL ═══════════ -->
+<div id="ip-modal">
+  <div id="ip-modal-inner">
+    <div class="modal-header">
+      <div class="panel-title" style="margin:0">
+        IP Details — <span id="modal-ip-title" style="color:var(--accent)">—</span>
+      </div>
+      <button class="btn btn-ghost btn-sm" onclick="closeIPModal()">✕ Close</button>
+    </div>
+    <div id="modal-body" style="padding:16px">
+      <div class="spinner" style="margin:24px auto"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════ HEADER ═══════════ -->
+<header>
+  <!-- Logo with glitch data-text attribute -->
+  <div class="logo" data-text="BitSentinel">
+    Bit<span>Sentinel</span>
+    <span style="color:var(--text-dim);font-size:.65rem;letter-spacing:1px;font-family:var(--font)"> // AI THREAT SYSTEM</span>
+  </div>
+
+  <div class="header-status">
+    <!-- SSE Live indicator -->
+    <div style="display:flex;align-items:center;gap:6px;padding:4px 10px;
+                background:var(--bg3);border:1px solid var(--border);border-radius:20px">
+      <div id="sse-dot" style="width:8px;height:8px;border-radius:50%;
+           background:var(--yellow);box-shadow:0 0 8px var(--yellow);transition:all .4s"></div>
+      <span id="sse-label" style="font-size:.7rem;letter-spacing:1px;color:var(--yellow)">CONNECTING…</span>
+    </div>
+
+    <!-- Theme Intensity Slider -->
+    <div class="theme-slider-wrap">
+      <span>🌟</span>
+      <input type="range" id="theme-intensity" min="0" max="100" value="50" title="UI Intensity" />
+    </div>
+
+    <span style="font-size:.72rem;color:var(--text-dim)">
+      LAST SCAN: <strong id="last-scan" style="color:var(--accent)">—</strong>
+    </span>
+
+    <!-- Logged-in user pill -->
+    <div class="user-pill">
+      <div class="user-pill-dot"></div>
+      <span>admin</span>
+    </div>
+
+    <span class="kb-hint" title="Press ? for keyboard shortcuts">⌨ ?</span>
+    <button class="btn btn-ghost btn-sm" onclick="generateReport()">⬇ Report</button>
+    <button class="btn btn-ghost btn-sm" onclick="clearThreats()">🗑 Clear</button>
+    <a href="/logout" class="btn-logout">⏻ Logout</a>
+  </div>
+</header>
+
+<!-- ═══════════ MAIN WRAPPER ═══════════ -->
+<div class="wrapper">
+
+  <!-- ── Stats Bar ── -->
+  <div class="stats-bar" style="margin-top:28px">
+    <div class="stat-card">
+      <div class="label">Total Threats</div>
+      <div class="value" id="cnt-total">0</div>
+    </div>
+    <div class="stat-card danger">
+      <div class="label">Blocked IPs</div>
+      <div class="value" id="cnt-blocked">0</div>
+    </div>
+    <div class="stat-card warn">
+      <div class="label">Log Lines Scanned</div>
+      <div class="value" id="cnt-scanned">0</div>
+    </div>
+    <div class="stat-card safe">
+      <div class="label">Engine Status</div>
+      <div class="value" style="font-size:1rem;padding-top:8px">● ACTIVE</div>
+    </div>
+  </div>
+
+  <!-- ── Row 1: Scanner + Risk Meter ── -->
+  <div class="grid-two">
+
+    <!-- Scan / Upload Panel -->
+    <div class="panel" style="position:relative">
+      <div id="scan-overlay" class="loading-overlay">
+        <div class="spinner"></div>
+        <p>SCANNING…</p>
+      </div>
+      <div class="panel-title" style="justify-content:space-between;align-items:center;display:flex">
+        <span>Threat Scanner</span>
+        <!-- ── LIVE MONITOR TOGGLE ── -->
+        <div style="display:flex;align-items:center;gap:8px">
+          <div id="monitor-badge" style="display:none;align-items:center;gap:6px;
+               padding:3px 10px;border-radius:20px;font-size:.68rem;letter-spacing:1px;
+               font-family:var(--font-mono);border:1px solid rgba(0,255,136,0.35);
+               background:rgba(0,255,136,0.08);color:var(--green)">
+            <span style="width:6px;height:6px;border-radius:50%;background:var(--green);
+                  box-shadow:0 0 6px var(--green);animation:pulse-dot 1.2s infinite;
+                  display:inline-block"></span>
+            LIVE
+          </div>
+          <select id="monitor-mode-select"
+                  style="background:var(--bg3);border:1px solid var(--border);color:var(--text);
+                         border-radius:6px;padding:5px 8px;font-family:var(--font-mono);
+                         font-size:.7rem;cursor:pointer;outline:none"
+                  title="Monitoring mode">
+            <option value="simulate">🎭 Simulate</option>
+            <option value="self_tap">🔭 Self-Tap (Real Requests)</option>
+            <option value="log_tail">📄 Log-Tail (Access Log)</option>
+          </select>
+          <button id="monitor-toggle-btn" class="btn btn-ghost btn-sm"
+                  onclick="toggleMonitor()"
+                  style="border-color:rgba(0,229,255,0.3);font-size:.72rem;
+                         letter-spacing:1px;font-family:var(--font-mono)">
+            ▶ Live Monitor
+          </button>
+        </div>
+      </div>
+      <!-- Live monitor stats bar -->
+      <div id="monitor-stats-bar" style="display:none;margin:8px 0 4px;
+           padding:8px 14px;background:rgba(0,255,136,0.05);
+           border:1px solid rgba(0,255,136,0.15);border-radius:8px;
+           font-size:.74rem;font-family:var(--font-mono);color:var(--text-dim)">
+        <span style="color:var(--green)">◈ MONITORING ACTIVE</span>
+        &nbsp;|&nbsp; Mode: <strong id="mon-mode" style="color:var(--accent)">—</strong>
+        &nbsp;|&nbsp; Events: <strong id="mon-events" style="color:var(--accent)">0</strong>
+        &nbsp;|&nbsp; Threats: <strong id="mon-threats" style="color:var(--yellow)">0</strong>
+        &nbsp;|&nbsp; Auto-Blocked: <strong id="mon-blocked" style="color:var(--red)">0</strong>
+      </div>
+      <span class="section-label">Quick IP Scan</span>
+      <div class="input-row">
+        <input type="text" id="scan-ip-input" placeholder="e.g. 192.168.1.100" />
+        <button class="btn btn-primary" onclick="scanIP()">⚡ Scan IP</button>
+      </div>
+      <span class="section-label" style="margin-top:16px;display:block">Upload Log File (.log / .txt / .csv)</span>
+      <div class="upload-zone" id="upload-zone">
+        <div class="upload-icon">📂</div>
+        <p>Drag &amp; drop your log file here, or click to browse</p>
+        <p style="margin-top:6px;font-size:.72rem">Max 5 MB — supports Apache / Nginx / simple formats</p>
+        <input type="file" id="file-input" accept=".log,.txt,.csv" onchange="handleFileInput(event)" />
+      </div>
+      <div id="scan-summary" class="scan-summary" style="margin-top:14px"></div>
+    </div>
+
+    <!-- Risk Meter + Block IP -->
+    <div style="display:flex;flex-direction:column;gap:20px">
+      <div class="panel">
+        <div class="panel-title">Average Risk Score</div>
+        <div class="risk-meter">
+          <div class="risk-arc-wrapper">
+            <canvas id="risk-canvas" width="160" height="90"></canvas>
+            <div class="risk-value" id="risk-value">0</div>
+          </div>
+          <div class="risk-label" id="risk-level">SAFE</div>
+          <div style="display:flex;gap:18px;font-size:.72rem;color:var(--text-dim);margin-top:4px">
+            <span style="color:var(--green)">● 0–30 Safe</span>
+            <span style="color:var(--yellow)">● 31–60 Suspicious</span>
+            <span style="color:var(--red)">● 61–100 Danger</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="panel" style="position:relative">
+        <div id="upload-overlay" class="loading-overlay">
+          <div class="spinner"></div><p>UPLOADING…</p>
+        </div>
+        <div class="panel-title">IP Blacklist Control</div>
+        <span class="section-label">Manually Block IP</span>
+        <div class="input-row">
+          <input type="text" id="ip-input" placeholder="Enter IP address" />
+          <button class="btn btn-danger" onclick="blockIP()">⛔ Block</button>
+        </div>
+        <span class="section-label" style="margin-top:4px;display:block">Blocked IPs</span>
+        <div class="blocked-list" id="blocked-list">
+          <div class="empty-state">// No blocked IPs</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Row 2: Live Chart + Activity Timeline ── -->
+  <div class="grid-two">
+    <div class="panel">
+      <div class="panel-title" style="justify-content:space-between">
+        <span>📈 Live Threat Trend</span>
+        <span style="color:var(--text-dim);font-size:.7rem">LAST 20 SNAPSHOTS</span>
+      </div>
+      <canvas id="live-chart" width="520" height="180" style="width:100%;height:180px"></canvas>
+    </div>
+
+    <div class="panel">
+      <div class="panel-title" style="justify-content:space-between">
+        <span>🕐 Activity Timeline</span>
+        <button class="btn btn-ghost btn-sm"
+          onclick="apiFetch('/api/activity/clear',{method:'POST'}).then(()=>{
+            document.getElementById('activity-timeline').innerHTML=
+            '<div class=\'empty-state\'>// Cleared</div>';
+            toast('Activity cleared','info')})">Clear</button>
+      </div>
+      <div class="activity-timeline" id="activity-timeline">
+        <div class="empty-state">// Awaiting activity…</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Row 3: Live Threat Feed ── -->
+  <div class="panel">
+    <div class="panel-title" style="justify-content:space-between">
+      <span>Live Threat Feed</span>
+      <span style="color:var(--text-dim);font-size:.7rem;letter-spacing:1px">
+        CLICK ROW FOR IP DETAILS &nbsp;|&nbsp; <kbd style="font-size:.65rem">R</kbd> REFRESH
+      </span>
+    </div>
+    <div style="display:flex;gap:12px;padding:0 0 8px;border-bottom:1px solid var(--border);
+                font-size:.7rem;letter-spacing:1px;color:var(--text-dim);text-transform:uppercase">
+      <div style="width:10px"></div>
+      <div style="flex:0 0 130px">IP Address</div>
+      <div style="flex:1">Threat Types</div>
+      <div style="flex:0 0 44px;text-align:right">Score</div>
+      <div style="flex:0 0 80px;text-align:right">Time</div>
+    </div>
+    <div class="threat-feed" id="threat-feed" style="margin-top:10px">
+      <div class="empty-state">// Awaiting threat data…</div>
+    </div>
+  </div>
+
+  <!-- ── Row 4: Prevention System Panel ── -->
+  <div style="margin-top:20px">
+    <div class="panel">
+      <div class="panel-title">🛡️ Prevention System</div>
+      <div class="tab-bar">
+        <button class="tab-btn active" onclick="switchTab('tab-stats')">📊 Stats</button>
+        <button class="tab-btn" onclick="switchTab('tab-config')">⚙️ Config</button>
+        <button class="tab-btn" onclick="switchTab('tab-whitelist')">✅ Whitelist</button>
+        <button class="tab-btn" onclick="switchTab('tab-ratelimit')">🚦 Rate Limits</button>
+        <button class="tab-btn" onclick="switchTab('tab-simulate')">🧪 Simulate</button>
+        <button class="tab-btn" onclick="switchTab('tab-creators')">👥 Team</button>
+        <button class="tab-btn" onclick="switchTab('tab-real-traffic');loadTapFeed()">🔭 Real Traffic</button>
+      </div>
+
+      <!-- TAB: Stats -->
+      <div id="tab-stats" class="tab-content active">
+        <div class="mini-stats">
+          <div class="mini-stat"><div class="ms-val" id="prev-total">—</div><div class="ms-label">Total</div></div>
+          <div class="mini-stat"><div class="ms-val" id="prev-danger" style="color:var(--red)">—</div><div class="ms-label">Danger</div></div>
+          <div class="mini-stat"><div class="ms-val" id="prev-suspicious" style="color:var(--yellow)">—</div><div class="ms-label">Suspicious</div></div>
+          <div class="mini-stat"><div class="ms-val" id="prev-safe" style="color:var(--green)">—</div><div class="ms-label">Safe</div></div>
+          <div class="mini-stat"><div class="ms-val" id="prev-auto-blocked" style="color:var(--accent2)">—</div><div class="ms-label">Auto-Blocked</div></div>
+          <div class="mini-stat"><div class="ms-val" id="prev-avg-score">—</div><div class="ms-label">Avg Score</div></div>
+        </div>
+        <span class="section-label">Top Threat Types</span>
+        <div id="prev-top-types" style="display:flex;gap:8px;flex-wrap:wrap;margin-top:6px">
+          <span style="color:var(--text-dim);font-size:.78rem">Loading…</span>
+        </div>
+      </div>
+
+      <!-- TAB: Config -->
+      <div id="tab-config" class="tab-content">
+        <div class="toggle-row">
+          <div><div class="toggle-label">Auto-Block Engine</div><div class="toggle-sublabel">Automatically blocks IPs exceeding the risk threshold</div></div>
+          <label class="toggle"><input type="checkbox" id="cfg-auto-block" checked onchange="saveConfig()"><span class="toggle-slider"></span></label>
+        </div>
+        <div class="toggle-row">
+          <div><div class="toggle-label">Rate Limiting</div><div class="toggle-sublabel">Track &amp; limit requests per IP per window</div></div>
+          <label class="toggle"><input type="checkbox" id="cfg-rate-limit" checked onchange="saveConfig()"><span class="toggle-slider"></span></label>
+        </div>
+        <div style="margin-top:18px">
+          <span class="section-label">Auto-Block Threshold</span>
+          <div class="threshold-bar"><div class="threshold-marker" id="threshold-marker" style="left:65%"></div></div>
+          <div style="display:flex;justify-content:space-between;font-size:.68rem;color:var(--text-dim)"><span>0 SAFE</span><span>30</span><span>60</span><span>100 DANGER</span></div>
+        </div>
+        <div class="config-grid" style="margin-top:18px">
+          <div class="config-row"><label>Auto-Block Threshold (0–100)</label><input type="number" id="cfg-threshold" value="65" min="0" max="100" oninput="updateThresholdMarker(this.value)" onchange="saveConfig()" /></div>
+          <div class="config-row"><label>Max Requests per Window</label><input type="number" id="cfg-max-req" value="100" min="1" max="10000" onchange="saveConfig()" /></div>
+          <div class="config-row"><label>Rate Limit Window (seconds)</label><input type="number" id="cfg-window" value="60" min="5" max="3600" onchange="saveConfig()" /></div>
+          <div class="config-row"><label>Brute Force Threshold (fails)</label><input type="number" id="cfg-brute" value="5" min="1" max="1000" onchange="saveConfig()" /></div>
+          <div class="config-row"><label>High Frequency Threshold (reqs)</label><input type="number" id="cfg-highfreq" value="100" min="1" max="100000" onchange="saveConfig()" /></div>
+          <div class="config-row"><label>Max Threat History (records)</label><input type="number" id="cfg-maxhist" value="500" min="10" max="100000" onchange="saveConfig()" /></div>
+        </div>
+        <div style="margin-top:14px;display:flex;gap:10px">
+          <button class="btn btn-primary btn-sm" onclick="saveConfig(true)">💾 Save Config</button>
+          <button class="btn btn-ghost btn-sm" onclick="loadConfig()">↺ Reload</button>
+        </div>
+        <div id="cfg-msg" style="margin-top:8px;font-size:.76rem;color:var(--green)"></div>
+      </div>
+
+      <!-- TAB: Whitelist -->
+      <div id="tab-whitelist" class="tab-content">
+        <span class="section-label">Add Trusted IP (never auto-blocked)</span>
+        <div class="input-row" style="margin-bottom:14px">
+          <input type="text" id="wl-ip-input" placeholder="e.g. 10.0.0.1" />
+          <button class="btn btn-primary btn-sm" onclick="addWhitelist()">✅ Whitelist IP</button>
+        </div>
+        <span class="section-label">Trusted IPs</span>
+        <div class="whitelist-list" id="whitelist-list"><div class="empty-state">// No trusted IPs</div></div>
+      </div>
+
+      <!-- TAB: Rate Limits -->
+      <div id="tab-ratelimit" class="tab-content">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+          <span class="section-label" style="margin:0">Live Rate Limit Tracking</span>
+          <div style="display:flex;gap:8px">
+            <button class="btn btn-ghost btn-sm" onclick="loadRateLimits()">↺ Refresh</button>
+            <button class="btn btn-danger btn-sm" onclick="resetAllRateLimits()">⛔ Reset All</button>
+          </div>
+        </div>
+        <div style="overflow-x:auto">
+          <table class="rl-table">
+            <thead><tr><th>IP Address</th><th>Requests</th><th>Remaining</th><th>Usage</th><th>At Limit?</th><th>Action</th></tr></thead>
+            <tbody id="rl-tbody"><tr><td colspan="6" class="empty-state">// No tracked IPs yet</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- TAB: Simulate -->
+      <div id="tab-simulate" class="tab-content">
+        <p style="color:var(--text-dim);font-size:.8rem;margin-bottom:16px">Test the auto-block engine against a simulated threat result without running a real scan.</p>
+        <div class="config-grid">
+          <div class="config-row"><label>IP Address</label><input type="text" id="sim-ip" placeholder="192.168.1.100" /></div>
+          <div class="config-row"><label>Risk Score (0–100)</label><input type="number" id="sim-score" value="75" min="0" max="100" /></div>
+        </div>
+        <div style="margin-top:12px">
+          <span class="section-label">Threat Types (comma-separated)</span>
+          <input type="text" id="sim-types" placeholder="Brute Force, SQL Injection, XSS" style="width:100%;margin-top:6px" />
+        </div>
+        <div style="margin-top:14px"><button class="btn btn-danger" onclick="simulateBlock()">🧪 Run Simulation</button></div>
+        <div id="sim-result" style="margin-top:14px;background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:14px;font-size:.78rem;display:none"></div>
+      </div>
+
+      <!-- ════ TAB: CREATORS / TEAM ════ -->
+      <div id="tab-creators" class="tab-content">
+        <p style="color:var(--text-dim);font-size:.82rem;margin-bottom:20px;line-height:1.7">
+          The minds behind <strong style="color:var(--accent)">BitSentinel</strong> —
+          a team of developers and security researchers building AI-powered cyber defence tools.
+        </p>
+        <div class="creators-grid">
+
+          <!-- Creator 1 -->
+          <div class="creator-card">
+            <div class="creator-avatar">👨‍💻</div>
+            <div class="creator-name">Alex Mercer</div>
+            <div class="creator-role">Lead Developer</div>
+            <a class="creator-linkedin" href="https://linkedin.com/in/placeholder" target="_blank" rel="noopener">
+              <svg viewBox="0 0 24 24"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 0 1-2.063-2.065 2.064 2.064 0 1 1 2.063 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/></svg>
+              LinkedIn
+            </a>
+          </div>
+
+          <!-- Creator 2 -->
+          <div class="creator-card">
+            <div class="creator-avatar">👩‍🔬</div>
+            <div class="creator-name">Priya Sharma</div>
+            <div class="creator-role">ML Engineer</div>
+            <a class="creator-linkedin" href="https://linkedin.com/in/placeholder" target="_blank" rel="noopener">
+              <svg viewBox="0 0 24 24"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 0 1-2.063-2.065 2.064 2.064 0 1 1 2.063 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/></svg>
+              LinkedIn
+            </a>
+          </div>
+
+          <!-- Creator 3 -->
+          <div class="creator-card">
+            <div class="creator-avatar">🧑‍🎨</div>
+            <div class="creator-name">Jordan Lee</div>
+            <div class="creator-role">UI / UX Designer</div>
+            <a class="creator-linkedin" href="https://linkedin.com/in/placeholder" target="_blank" rel="noopener">
+              <svg viewBox="0 0 24 24"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 0 1-2.063-2.065 2.064 2.064 0 1 1 2.063 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/></svg>
+              LinkedIn
+            </a>
+          </div>
+
+          <!-- Creator 4 -->
+          <div class="creator-card">
+            <div class="creator-avatar">🛡️</div>
+            <div class="creator-name">Ravi Kumar</div>
+            <div class="creator-role">Security Researcher</div>
+            <a class="creator-linkedin" href="https://linkedin.com/in/placeholder" target="_blank" rel="noopener">
+              <svg viewBox="0 0 24 24"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 0 1-2.063-2.065 2.064 2.064 0 1 1 2.063 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/></svg>
+              LinkedIn
+            </a>
+          </div>
+
+        </div><!-- /creators-grid -->
+      </div><!-- /tab-creators -->
+
+      <!-- ════ TAB: REAL TRAFFIC (Self-Tap Feed) ════ -->
+      <div id="tab-real-traffic" class="tab-content">
+        <div style="margin-bottom:14px">
+          <p style="color:var(--text-dim);font-size:.82rem;line-height:1.7;margin-bottom:12px">
+            <strong style="color:var(--accent)">🔭 Self-Tap mode</strong> captures every real HTTP
+            request hitting this server and feeds it into the detection engine.<br>
+            Select <code style="color:var(--accent);background:var(--bg3);padding:2px 6px;border-radius:4px">🔭 Self-Tap</code>
+            from the dropdown and click <strong>▶ Live Monitor</strong> to start.
+            Then browse the dashboard — <em>your own browser traffic will be analysed.</em>
+          </p>
+          <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+            <button class="btn btn-ghost btn-sm" onclick="loadTapFeed()">↺ Refresh Feed</button>
+            <span id="tap-enabled-badge" style="font-family:var(--font-mono);font-size:.7rem;
+                  color:var(--text-dim);padding:4px 10px;border-radius:20px;
+                  border:1px solid var(--border)">TAP: INACTIVE</span>
+          </div>
+        </div>
+        <div style="overflow-x:auto">
+          <table class="rl-table" id="tap-table">
+            <thead>
+              <tr>
+                <th>Timestamp</th>
+                <th>IP Address</th>
+                <th>Method</th>
+                <th>Path</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody id="tap-tbody">
+              <tr><td colspan="5" class="empty-state">// Start Self-Tap mode to see real requests</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div><!-- /tab-real-traffic -->
+
+
+    </div><!-- /panel -->
+  </div><!-- /Row 4 -->
+
+  <!-- ── Footer ── -->
+  <div style="text-align:center;margin-top:40px;padding:20px 0;
+              border-top:1px solid var(--border);color:var(--text-dim);font-size:.72rem;
+              letter-spacing:1px;font-family:var(--font-mono)">
+    BITSENTINEL &nbsp;|&nbsp; AI THREAT DETECTION SYSTEM &nbsp;|&nbsp;
+    <span style="color:var(--accent)">ALL PHASES COMPLETE</span>
+    &nbsp;|&nbsp; Press <kbd>?</kbd> for shortcuts
+  </div>
+
+</div><!-- /wrapper -->
+
+<!-- Load order: dashboard → realtime → animations -->
+<script src="{{ url_for('static', filename='js/dashboard.js') }}"></script>
+<script src="{{ url_for('static', filename='js/realtime.js') }}"></script>
+<script src="{{ url_for('static', filename='js/animations.js') }}"></script>
+</body>
+</html>

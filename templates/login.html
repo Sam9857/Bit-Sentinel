@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>BitSentinel // Secure Access</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/login.css') }}" />
+</head>
+<body>
+
+  <!-- ═══ Background: full-screen image ═══ -->
+  <div class="bg-image"div>
+
+  <!-- ═══ Overlay + fx layers ═══ -->
+  <div class="bg-overlay"></div>
+  <div class="bg-pulse"></div>
+  <div class="scanlines"></div>
+  <div id="particles"></div>
+
+  <!-- ═══ Main content ═══ -->
+  <div class="page-center">
+
+    <!-- ════════════════════════════════════════
+         CREATIVE LOGO above the card
+         ════════════════════════════════════════ -->
+    <div class="logo-wrap">
+      <svg class="logo-svg" viewBox="0 0 290 90"
+           xmlns="http://www.w3.org/2000/svg" aria-label="BitSentinel">
+        <defs>
+          <!-- Crimson → violet gradient -->
+          <linearGradient id="grad" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0%"   stop-color="#e63946"/>
+            <stop offset="100%" stop-color="#9d4edd"/>
+          </linearGradient>
+          <!-- Horizontal fade for underline -->
+          <linearGradient id="grad-h" x1="0" y1="0" x2="1" y2="0">
+            <stop offset="0%"   stop-color="#e63946"/>
+            <stop offset="65%"  stop-color="#9d4edd"/>
+            <stop offset="100%" stop-color="transparent"/>
+          </linearGradient>
+          <!-- Soft glow filter -->
+          <filter id="fx-glow" x="-30%" y="-30%" width="160%" height="160%">
+            <feGaussianBlur stdDeviation="2.5" result="blur"/>
+            <feMerge>
+              <feMergeNode in="blur"/>
+              <feMergeNode in="SourceGraphic"/>
+            </feMerge>
+          </filter>
+          <!-- Clip scan-line to hex interior -->
+          <clipPath id="hex-clip">
+            <polygon points="44,10 73,27 73,61 44,78 15,61 15,27"/>
+          </clipPath>
+        </defs>
+
+        <!-- Outer rotating dashed ring -->
+        <circle class="logo-ring" cx="44" cy="44" r="41"
+                fill="none" stroke="rgba(230,57,70,0.22)"
+                stroke-width="1" stroke-dasharray="5 4"/>
+
+        <!-- Outer hex (pointed-top, r=34, centre 44,44) -->
+        <!--  top=44,10  tr=73,27  br=73,61  bot=44,78  bl=15,61  tl=15,27 -->
+        <polygon class="logo-hex"
+          points="44,10 73,27 73,61 44,78 15,61 15,27"
+          fill="rgba(10,10,16,0.88)" stroke="url(#grad)" stroke-width="1.8"/>
+
+        <!-- Inner hex (r=26) — subtle second ring -->
+        <polygon
+          points="44,18 67,31 67,57 44,70 21,57 21,31"
+          fill="none" stroke="rgba(157,78,221,0.15)" stroke-width="1"/>
+
+        <!-- Corner circuit nodes -->
+        <circle cx="44" cy="10" r="2.5" fill="#e63946" filter="url(#fx-glow)"/>
+        <circle cx="73" cy="27" r="2"   fill="#9d4edd"/>
+        <circle cx="73" cy="61" r="2"   fill="#9d4edd"/>
+        <circle cx="44" cy="78" r="2.5" fill="#e63946" filter="url(#fx-glow)"/>
+        <circle cx="15" cy="61" r="2"   fill="#9d4edd"/>
+        <circle cx="15" cy="27" r="2"   fill="#9d4edd"/>
+
+        <!-- L-shaped circuit traces from corners -->
+        <polyline points="44,10 44,3 54,3"   fill="none"
+                  stroke="rgba(230,57,70,0.55)" stroke-width="1" stroke-linecap="round"/>
+        <polyline points="73,27 81,27 81,19"  fill="none"
+                  stroke="rgba(157,78,221,0.45)" stroke-width="1" stroke-linecap="round"/>
+        <polyline points="73,61 81,61 81,69"  fill="none"
+                  stroke="rgba(157,78,221,0.45)" stroke-width="1" stroke-linecap="round"/>
+        <polyline points="44,78 44,85 34,85"  fill="none"
+                  stroke="rgba(230,57,70,0.55)" stroke-width="1" stroke-linecap="round"/>
+        <!-- Terminal dots -->
+        <circle cx="54" cy="3"  r="1.5" fill="rgba(230,57,70,0.7)"/>
+        <circle cx="81" cy="19" r="1.5" fill="rgba(157,78,221,0.6)"/>
+        <circle cx="81" cy="69" r="1.5" fill="rgba(157,78,221,0.6)"/>
+        <circle cx="34" cy="85" r="1.5" fill="rgba(230,57,70,0.7)"/>
+
+        <!-- Centre vertical divider -->
+        <line x1="44" y1="26" x2="44" y2="62"
+              stroke="rgba(255,255,255,0.15)" stroke-width="1"/>
+
+        <!-- "B" left — crimson -->
+        <text x="29" y="53" text-anchor="middle"
+              font-family="'JetBrains Mono',monospace"
+              font-weight="700" font-size="19"
+              fill="#e63946" filter="url(#fx-glow)">B</text>
+
+        <!-- "S" right — violet -->
+        <text x="59" y="53" text-anchor="middle"
+              font-family="'JetBrains Mono',monospace"
+              font-weight="700" font-size="19"
+              fill="#9d4edd" filter="url(#fx-glow)">S</text>
+
+        <!-- Scan line (y animated via JS, clipped to hex) -->
+        <g clip-path="url(#hex-clip)">
+          <line class="logo-scan" x1="10" y1="44" x2="78" y2="44"
+                stroke="rgba(230,57,70,0.45)" stroke-width="1"
+                stroke-dasharray="4 6"/>
+        </g>
+
+        <!-- ── Wordmark right of badge ── -->
+
+        <!-- "BIT" — white bold -->
+        <text x="97" y="37"
+              font-family="'JetBrains Mono',monospace"
+              font-weight="700" font-size="25"
+              fill="#ffffff" letter-spacing="5"
+              filter="url(#fx-glow)">BIT</text>
+
+        <!-- "SENTINEL" — gradient -->
+        <text x="97" y="64"
+              font-family="'JetBrains Mono',monospace"
+              font-weight="700" font-size="25"
+              fill="url(#grad)" letter-spacing="2">SENTINEL</text>
+
+        <!-- Accent underline -->
+        <line x1="97" y1="70" x2="274" y2="70"
+              stroke="url(#grad-h)" stroke-width="1" opacity="0.65"/>
+
+        <!-- Tagline -->
+        <text x="97" y="83"
+              font-family="'JetBrains Mono',monospace"
+              font-size="6.5" fill="rgba(255,255,255,0.36)"
+              letter-spacing="2.5">THREAT INTELLIGENCE PLATFORM</text>
+
+      </svg>
+    </div><!-- /logo-wrap -->
+
+
+    <!-- ════════════════════════════════════════
+         GLASS CARD — unchanged structure/logic
+         ════════════════════════════════════════ -->
+    <div class="glass-card" id="glass-card">
+
+      <div class="card-bar"></div>
+
+      <div class="card-head">
+        <div class="lock-wrap">
+          <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <rect x="3" y="11" width="18" height="12" rx="2"
+                  stroke="currentColor" stroke-width="2"/>
+            <path d="M7 11V7a5 5 0 0 1 10 0v4"
+                  stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+            <circle cx="12" cy="17" r="1.5" fill="currentColor"/>
+          </svg>
+        </div>
+        <p class="card-title">SECURE ACCESS</p>
+        <p class="card-sub">Administrator Authentication Portal</p>
+      </div>
+
+      {% if error %}
+      <div class="err-banner">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
+             stroke="currentColor" stroke-width="2">
+          <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+          <line x1="12" y1="9" x2="12" y2="13"/>
+          <line x1="12" y1="17" x2="12.01" y2="17"/>
+        </svg>
+        {{ error }}
+      </div>
+      {% endif %}
+
+      <form class="auth-form" method="POST" action="/login" autocomplete="off">
+
+        <div class="field">
+          <label class="f-label" for="username">
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M12 12c2.7 0 5-2.3 5-5s-2.3-5-5-5-5 2.3-5 5 2.3 5 5 5zm0 2c-3.3 0-10 1.7-10 5v2h20v-2c0-3.3-6.7-5-10-5z"/>
+            </svg>
+            USERNAME
+          </label>
+          <div class="f-shell" id="shell-u">
+            <input type="text" id="username" name="username"
+                   placeholder="admin" autocomplete="off" required />
+            <span class="corner tl"></span>
+            <span class="corner tr"></span>
+            <span class="corner bl"></span>
+            <span class="corner br"></span>
+            <span class="underline"></span>
+            <span class="input-shimmer"></span>
+          </div>
+        </div>
+
+        <div class="field">
+          <label class="f-label" for="password">
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M18 8h-1V6a5 5 0 0 0-10 0v2H6a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V10a2 2 0 0 0-2-2zm-6 9a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3zm3.1-9H8.9V6a3.1 3.1 0 0 1 6.2 0v2z"/>
+            </svg>
+            PASSWORD
+          </label>
+          <div class="f-shell" id="shell-p">
+            <input type="password" id="password" name="password"
+                   placeholder="••••••••" autocomplete="off" required />
+            <button type="button" class="eye-btn" onclick="togglePwd()"
+                    aria-label="Toggle password visibility">
+              <svg id="eye-icon" viewBox="0 0 24 24" fill="none"
+                   stroke="currentColor" stroke-width="2">
+                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                <circle cx="12" cy="12" r="3"/>
+              </svg>
+            </button>
+            <span class="corner tl"></span>
+            <span class="corner tr"></span>
+            <span class="corner bl"></span>
+            <span class="corner br"></span>
+            <span class="underline"></span>
+            <span class="input-shimmer"></span>
+          </div>
+        </div>
+
+        <button type="submit" class="submit-btn" id="submit-btn">
+          <span id="btn-label">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
+                 stroke="currentColor" stroke-width="2.5">
+              <polyline points="9 18 15 12 9 6"/>
+            </svg>
+            AUTHENTICATE
+          </span>
+          <span class="btn-shine"></span>
+        </button>
+
+      </form>
+
+      <div class="card-foot">
+        <span>v5.0</span>
+        <span class="sep">◈</span>
+        <span>ADMIN PORTAL</span>
+        <span class="sep">◈</span>
+        <span id="clock">--:--:-- UTC</span>
+      </div>
+
+    </div><!-- /glass-card -->
+
+    <div class="cap-strip">
+      <div class="cap"><span class="cdot red"></span>Explainable AI</div>
+      <div class="cap"><span class="cdot vio"></span>Behavioral Analysis</div>
+      <div class="cap"><span class="cdot amb"></span>Real-Time Scoring</div>
+      <div class="cap"><span class="cdot grn"></span>Auto-Block</div>
+    </div>
+
+  </div><!-- /page-center -->
+
+<script>
+/* ── 1. CLOCK ── */
+(function tick() {
+  var el = document.getElementById('clock');
+  if (el) el.textContent = new Date().toUTCString().slice(17,25) + ' UTC';
+  setTimeout(tick, 1000);
+})();
+
+/* ── 2. PASSWORD TOGGLE ── */
+function togglePwd() {
+  var inp = document.getElementById('password');
+  var ico = document.getElementById('eye-icon');
+  var show = inp.type === 'password';
+  inp.type = show ? 'text' : 'password';
+  ico.style.opacity = show ? '0.45' : '1';
+}
+
+/* ── 3. INPUT FOCUS STATE ── */
+document.querySelectorAll('.f-shell input').forEach(function(inp) {
+  inp.addEventListener('focus',  function() { inp.closest('.f-shell').classList.add('active'); });
+  inp.addEventListener('blur',   function() { inp.closest('.f-shell').classList.remove('active'); });
+});
+
+/* ── 4. SUBMIT LOADING STATE ── */
+document.querySelector('.auth-form').addEventListener('submit', function() {
+  var btn = document.getElementById('submit-btn');
+  var lbl = document.getElementById('btn-label');
+  if (btn && lbl) {
+    btn.disabled = true;
+    btn.classList.add('loading');
+    lbl.innerHTML = 'AUTHENTICATING&hellip;';
+  }
+});
+
+/* ── 5. LOGO SCAN LINE SWEEP ── */
+(function logoScan() {
+  var line = document.querySelector('.logo-scan');
+  if (!line) return;
+  var y = 10, dir = 1;
+  setInterval(function() {
+    y += dir * 1.2;
+    if (y > 78) dir = -1;
+    if (y < 10) dir =  1;
+    line.setAttribute('y1', y);
+    line.setAttribute('y2', y);
+  }, 22);
+})();
+
+/* ── 6. FLOATING PARTICLES ── */
+(function particles() {
+  var container = document.getElementById('particles');
+  if (!container) return;
+  var CHARS = ['◈','⬡','◆','⬟','⬢','▲','▸'];
+  for (var i = 0; i < 22; i++) {
+    var p = document.createElement('div');
+    p.className = 'particle';
+    p.textContent = CHARS[Math.floor(Math.random() * CHARS.length)];
+    var size = 10 + Math.random() * 22;
+    p.style.cssText = [
+      'left:'               + (Math.random() * 100) + '%',
+      'top:'                + (Math.random() * 100) + '%',
+      'font-size:'          + size + 'px',
+      'opacity:'            + (0.03 + Math.random() * 0.1),
+      'animation-delay:'    + (Math.random() * 12) + 's',
+      'animation-duration:' + (8 + Math.random() * 14) + 's',
+    ].join(';');
+    container.appendChild(p);
+  }
+})();
+
+/* ── 7. MAGNETIC TILT ── */
+(function magneticCard() {
+  var card = document.getElementById('glass-card');
+  if (!card) return;
+  card.addEventListener('mousemove', function(e) {
+    var r  = card.getBoundingClientRect();
+    var cx = ((e.clientX - r.left) / r.width  - 0.5) * 6;
+    var cy = ((e.clientY - r.top)  / r.height - 0.5) * 6;
+    card.style.transform =
+      'perspective(900px) rotateY(' + cx + 'deg) rotateX(' + (-cy) + 'deg) translateY(-4px)';
+  });
+  card.addEventListener('mouseleave', function() {
+    card.style.transform =
+      'perspective(900px) rotateY(0deg) rotateX(0deg) translateY(0)';
+  });
+})();
+
+/* ── 8. CLICK RIPPLE on submit ── */
+document.getElementById('submit-btn').addEventListener('mousedown', function(e) {
+  var shine = this.querySelector('.btn-shine');
+  if (!shine) return;
+  var r = this.getBoundingClientRect();
+  var x = ((e.clientX - r.left) / r.width  * 100).toFixed(1) + '%';
+  var y = ((e.clientY - r.top)  / r.height * 100).toFixed(1) + '%';
+  shine.style.background =
+    'radial-gradient(circle at ' + x + ' ' + y +
+    ', rgba(255,255,255,0.28) 0%, transparent 70%)';
+  shine.style.opacity = '1';
+  setTimeout(function() { shine.style.opacity = '0'; }, 450);
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,52 @@
+# ─── Python ───────────────────────────────────────────────────
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyc
+*.pyd
+.Python
+*.egg
+*.egg-info/
+dist/
+build/
+.eggs/
+
+# ─── Virtual Environments ─────────────────────────────────────
+venv/
+.venv/
+env/
+ENV/
+.env
+
+# ─── Project-specific ─────────────────────────────────────────
+uploads/
+*.log
+!SAMPLE_LOG.log
+
+# ─── Data files — keep schemas, ignore content ────────────────
+# (Comment these lines out if you want to commit data)
+# data/blacklist.json
+# data/threats.json
+# data/whitelist.json
+
+# ─── IDE / Editor ─────────────────────────────────────────────
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+
+# ─── Testing ──────────────────────────────────────────────────
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+
+# ─── Secrets ──────────────────────────────────────────────────
+.env
+.env.*
+secrets.json
+*.pem
+*.key

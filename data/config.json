@@ -1,0 +1,12 @@
+{
+  "auto_block_enabled": true,
+  "auto_block_threshold": 65,
+  "rate_limit_enabled": true,
+  "rate_limit_max_requests": 100,
+  "rate_limit_window_seconds": 60,
+  "brute_force_threshold": 4,
+  "high_freq_threshold": 100,
+  "alert_on_danger": true,
+  "max_threat_history": 500,
+  "last_updated": "2026-03-06T06:26:10.391813"
+}

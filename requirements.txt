@@ -1,0 +1,14 @@
+# ─── Core Web Framework ───────────────────────────────────────
+flask>=3.0.0,<4.0.0
+werkzeug>=3.0.0,<4.0.0
+
+# ─── Machine Learning ─────────────────────────────────────────
+scikit-learn>=1.4.0,<2.0.0
+numpy>=1.26.0,<3.0.0
+pandas>=2.2.0,<3.0.0
+
+# ─── Production Server ────────────────────────────────────────
+gunicorn>=21.2.0
+
+# ─── Development (optional) ───────────────────────────────────
+# python-dotenv>=1.0.0   # Uncomment for .env support
